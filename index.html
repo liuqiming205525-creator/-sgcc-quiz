@@ -209,6 +209,38 @@ button { font-family:inherit; border:none; cursor:pointer; background:none; font
 .score-box .srow .l { font-size:.72rem; color:var(--ink3); margin-top:2px; }
 .toast { position:fixed; left:50%; bottom:80px; transform:translateX(-50%); background:rgba(15,23,42,.92); color:#fff; padding:11px 20px; border-radius:99px; font-size:.84rem; z-index:200; opacity:0; transition:opacity .25s; pointer-events:none; max-width:86vw; text-align:center; }
 .toast.show { opacity:1; }
+
+/* ===== 搜题 ===== */
+.search-bar { position:sticky; top:0; z-index:30; background:var(--card); border-bottom:1px solid var(--line); padding:calc(10px + env(safe-area-inset-top)) 14px 12px; }
+.search-bar-inner { max-width:720px; margin:0 auto; display:flex; align-items:center; gap:8px; }
+.search-input-wrap { flex:1; position:relative; }
+.search-input-wrap input { width:100%; background:#f0f3f7; border:1.5px solid transparent; border-radius:12px; padding:11px 14px 11px 38px; font-size:.95rem; outline:none; transition:.15s; color:var(--ink); }
+.search-input-wrap input:focus { border-color:var(--green); background:#fff; }
+.search-input-wrap .ic { position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--ink3); font-size:1rem; }
+.search-input-wrap .clear { position:absolute; right:8px; top:50%; transform:translateY(-50%); width:22px; height:22px; border-radius:50%; background:#c8d0db; color:#fff; font-size:.72rem; display:flex; align-items:center; justify-content:center; }
+.group-tabs { display:flex; gap:8px; overflow-x:auto; padding:12px 16px; -webkit-overflow-scrolling:touch; scrollbar-width:none; background:var(--bg); position:sticky; top:0; z-index:20; }
+.group-tabs::-webkit-scrollbar { display:none; }
+.group-tabs button { flex-shrink:0; padding:7px 14px; border-radius:99px; background:var(--card); border:1.5px solid var(--line); color:var(--ink2); font-size:.82rem; font-weight:600; white-space:nowrap; }
+.group-tabs button.active { background:var(--green); color:#fff; border-color:var(--green); }
+.search-result-count { padding:4px 16px 10px; font-size:.78rem; color:var(--ink3); max-width:720px; margin:0 auto; }
+.search-result-count b { color:var(--green); font-size:.9rem; }
+.sr-card { background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:15px; margin-bottom:11px; box-shadow:var(--shadow); }
+.sr-card .hd { display:flex; align-items:center; gap:7px; flex-wrap:wrap; }
+.sr-card .qid { font-size:.75rem; color:var(--ink3); margin-left:auto; }
+.sr-card .stem-line { font-size:.93rem; line-height:1.7; margin-top:10px; }
+.sr-card .stem-line mark { background:#fff3a8; color:inherit; border-radius:3px; padding:0 2px; }
+.sr-card .opts { margin-top:10px; display:flex; flex-direction:column; gap:6px; }
+.sr-card .opts.judge { flex-direction:row; }
+.sr-card .opt-line { font-size:.84rem; line-height:1.6; padding:7px 11px; border-radius:9px; background:#f7f9fc; display:flex; gap:8px; align-items:flex-start; }
+.sr-card .opt-line.right { background:var(--green-light); color:var(--green-dark); font-weight:600; }
+.sr-card .opt-line .let { width:20px; height:20px; min-width:20px; border-radius:6px; background:#fff; color:var(--ink2); font-size:.72rem; font-weight:700; display:flex; align-items:center; justify-content:center; }
+.sr-card .opt-line.right .let { background:var(--green); color:#fff; }
+.sr-card .opts.judge .opt-line { justify-content:center; text-align:center; font-weight:700; flex:1; padding:12px 8px; }
+.sr-card .opts.judge .opt-line .let { display:none; }
+.sr-card .ans-line { margin-top:11px; font-size:.84rem; }
+.sr-empty { text-align:center; padding:60px 20px; color:var(--ink3); }
+.sr-empty .em { font-size:2.4rem; margin-bottom:12px; }
+.sr-empty p { font-size:.88rem; line-height:1.9; }
 </style>
 </head>
 <body>
@@ -251,6 +283,14 @@ button { font-family:inherit; border:none; cursor:pointer; background:none; font
       <button class="mode-card" id="btn-random" onclick="startRandom(false)">
         <div class="mc-icon random">🎲</div>
         <div class="mc-txt"><b id="rand-title">随机 100 题</b><span id="rand-desc">乱序抽题 · 检验综合掌握</span></div>
+        <span style="color:var(--ink3);font-size:1.2rem">›</span>
+      </button>
+    </div>
+    <div class="section">
+      <h2>搜题<span>输入关键词查找题目与答案</span></h2>
+      <button class="mode-card" onclick="showView('search')">
+        <div class="mc-icon" style="background:linear-gradient(135deg,#34d399,#059669)">🔍</div>
+        <div class="mc-txt"><b>搜题</b><span>输入题目中的文字，按分组快速定位题目与答案</span></div>
         <span style="color:var(--ink3);font-size:1.2rem">›</span>
       </button>
     </div>
@@ -304,6 +344,20 @@ button { font-family:inherit; border:none; cursor:pointer; background:none; font
   <div class="container" id="stats-body"></div>
 </div>
 
+<!-- ===== 搜题 ===== -->
+<div id="v-search" class="view">
+  <div class="search-bar"><div class="search-bar-inner">
+    <button class="back" style="font-size:1.3rem;width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center" onclick="showView('home')">‹</button>
+    <div class="search-input-wrap">
+      <span class="ic">🔍</span>
+      <input type="text" id="search-input" placeholder="输入题目中的文字..." oninput="onSearchInput()" autocomplete="off">
+      <span class="clear" id="search-clear" style="display:none" onclick="clearSearch()">✕</span>
+    </div>
+  </div></div>
+  <div class="group-tabs" id="group-tabs"></div>
+  <div id="search-results" class="container" style="padding-top:0"></div>
+</div>
+
 <div class="mask" id="mask"><div class="modal" id="modal-box"></div></div>
 <div class="toast" id="toast"></div>
 <input type="file" id="import-file" accept=".json,application/json" style="display:none" onchange="importData(this.files[0])">
@@ -344,6 +398,7 @@ function showView(name){
   if(name==='home') renderHome();
   if(name==='wrong') renderWrong();
   if(name==='stats') renderStats();
+  if(name==='search'){ buildGroupTabs(); doSearch(($('#search-input').value||'').trim()); setTimeout(()=>$('#search-input').focus(), 60); }
 }
 function openModal(html){ $('#modal-box').innerHTML = html; $('#mask').classList.add('show'); }
 function closeModal(){ $('#mask').classList.remove('show'); }
@@ -861,6 +916,101 @@ function importData(file){
     }catch(err){ toast('导入失败：文件格式不正确'); }
   };
   reader.readAsText(file);
+}
+
+/* ===== 搜题 ===== */
+let searchGroup = 'all';
+let searchTimer = null;
+
+function buildGroupTabs(){
+  let html = `<button class="${searchGroup==='all'?'active':''}" onclick="setSearchGroup('all')">全部</button>`;
+  RANGES.forEach(([s,e])=>{
+    const key = s+'-'+e;
+    html += `<button class="${searchGroup===key?'active':''}" onclick="setSearchGroup('${key}')">${s}-${e}</button>`;
+  });
+  $('#group-tabs').innerHTML = html;
+}
+function setSearchGroup(g){
+  searchGroup = g;
+  buildGroupTabs();
+  doSearch(($('#search-input').value||'').trim());
+}
+function onSearchInput(){
+  const v = $('#search-input').value;
+  $('#search-clear').style.display = v ? '' : 'none';
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(()=>doSearch(v.trim()), 180);
+}
+function clearSearch(){
+  $('#search-input').value = '';
+  $('#search-clear').style.display = 'none';
+  doSearch('');
+}
+function highlight(text, kw){
+  const safe = esc(text);
+  if(!kw) return safe;
+  try{
+    const re = new RegExp(kw.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'), 'gi');
+    return safe.replace(re, m=>`<mark>${m}</mark>`);
+  }catch(e){ return safe; }
+}
+function doSearch(kw){
+  const box = $('#search-results');
+  const oldCnt = $('#search-count'); if(oldCnt) oldCnt.remove();
+  // 确定搜索范围
+  let pool;
+  if(searchGroup==='all'){
+    pool = Q;
+  } else {
+    const [s,e] = searchGroup.split('-').map(Number);
+    pool = Q.filter(q => q[0]>=s && q[0]<=e);
+  }
+  if(!kw){
+    box.innerHTML = `<div class="sr-empty"><div class="em">🔍</div><p><b>输入题目中的文字开始搜索</b><br>支持在指定分组中查找题目和答案</p></div>`;
+    return;
+  }
+  const k = kw.toLowerCase();
+  const matched = pool.filter(q => {
+    if(q[3].toLowerCase().includes(k)) return true;
+    if(q[2].toLowerCase().includes(k)) return true;
+    for(let i=0;i<q[4].length;i++){ if(q[4][i].toLowerCase().includes(k)) return true; }
+    return false;
+  });
+  // 结果计数
+  const cnt = document.createElement('div');
+  cnt.className = 'search-result-count';
+  cnt.id = 'search-count';
+  cnt.innerHTML = `找到 <b>${matched.length}</b> 道匹配题目${searchGroup==='all'?'':'（分组 '+searchGroup+'）'}`;
+  $('#group-tabs').after(cnt);
+
+  if(!matched.length){
+    box.innerHTML = `<div class="sr-empty"><div class="em">😶</div><p><b>没有找到匹配的题目</b><br>换个关键词或切换分组试试</p></div>`;
+    return;
+  }
+  const letters = ['A','B','C','D','E','F'];
+  let html = '';
+  matched.forEach(q=>{
+    const qid = q[0];
+    const isJudge = q[1]===2;
+    const ansL = q[5].split('、');
+    let optsHtml = '';
+    q[4].forEach((text,oi)=>{
+      const L = letters[oi];
+      const isAns = ansL.includes(L);
+      optsHtml += `<div class="opt-line ${isAns?'right':''}"><span class="let">${L}</span><span>${highlight(text,kw)}</span></div>`;
+    });
+    html += `<div class="sr-card">
+      <div class="hd">
+        <span class="tag ${TYPE_TAG[q[1]]}">${TYPE_NAMES[q[1]]}</span>
+        <span class="tag part">${esc(q[2])}</span>
+        <span class="qid">题号 ${qid}</span>
+      </div>
+      <div class="stem-line">${highlight(q[3],kw)}</div>
+      <div class="opts ${isJudge?'judge':''}">${optsHtml}</div>
+      <div class="ans-line"><span class="ans-chip right" style="background:var(--green-light);color:var(--green-dark);border-radius:8px;padding:4px 10px">正确答案：${dispAns(q,q[5])}</span></div>
+    </div>`;
+  });
+  box.innerHTML = html;
 }
 
 /* 页面初始化：若存在进行中的会话，自动恢复到对应界面（刷新后界面不变） */
